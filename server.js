@@ -150,16 +150,60 @@ fastify.put('/users/:id', async (request, reply) => {
 //     return user;
 //   });
   
- // Delete a user using the DELETE method:
- fastify.delete('/users/:id', async (request, reply) => {
-    const { id } = request.params;
-    const user = await Users.findByPk(id);
-    if (!user) {
-      reply.code(404).send({ message: 'User not found' });
+// Delete a user and their associated bank account using a transaction
+fastify.delete('/users/:id', async (request, reply) => {
+  const { id } = request.params;
+
+  try {
+    // Begin a transaction
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Find the bank account associated with the user and delete it
+      const bankAccount = await Bank_accounts.findOne({
+        where: { user_id: id },
+        transaction, // Pass the transaction instance
+      });
+
+      if (bankAccount) {
+        await bankAccount.destroy({ transaction });
+      }
+
+      // Find and delete the user
+      const user = await Users.findByPk(id, { transaction });
+      if (!user) {
+        await transaction.rollback(); // Rollback the transaction if user not found
+        return reply.code(404).send({ message: 'User not found' });
+      }
+
+      await user.destroy({ transaction });
+
+      // Commit the transaction after successful deletion of user and bank account
+      await transaction.commit();
+
+      return { message: 'User and associated bank account deleted successfully' };
+    } catch (err) {
+      // Rollback the transaction if an error occurs during deletion
+      await transaction.rollback();
+      throw err;
     }
-    await user.destroy();
-    return { message: 'User deleted successfully' };
-  });
+  } catch (err) {
+    console.error('Error deleting user and bank account:', err);
+    throw new Error('Failed to delete user and associated bank account: ' + err.message);
+  }
+});
+
+
+//  // Delete a user using the DELETE method:
+//  fastify.delete('/users/:id', async (request, reply) => {
+//     const { id } = request.params;
+//     const user = await Users.findByPk(id);
+//     if (!user) {
+//       reply.code(404).send({ message: 'User not found' });
+//     }
+//     await user.destroy();
+//     return { message: 'User deleted successfully' };
+//   });
   
 // // Update a user using the PUT method:
 // fastify.put('/users/:id', async (request, reply) => {
