@@ -5,9 +5,8 @@ const uuid = require('uuid');
 module.exports = {
   async up(queryInterface, Sequelize) {
     const accountNumber1 = generateAccountNumber();
-    const accountNumber2 = generateAccountNumber();
-    const accountNumber3 = generateAccountNumber();
-  
+    const userId1 = uuid.v4();
+
     await queryInterface.bulkInsert(
       'bank_accounts',
       [
@@ -15,29 +14,36 @@ module.exports = {
           id: uuid.v4(),
           user_id: uuid.v4(),
           account_number: accountNumber1,
-          account_type: randomAccountType(),
           created_at: new Date(),
           updated_at: new Date(),
-        },
-        {
-          id: uuid.v4(),
-          user_id: uuid.v4(),
-          account_number: accountNumber2,
-          account_type: randomAccountType(),
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
-        {
-          id: uuid.v4(),
-          user_id: uuid.v4(),
-          account_number: accountNumber3,
-          account_type: randomAccountType(),
-          created_at: new Date(),
-          updated_at: new Date(),
-        },
+        }, 
       ],
       {}
     );
+    
+    await queryInterface.bulkInsert(
+      'users',
+      [
+        {
+          id: userId1,
+          username: 'user1',
+          email: 'user1@example.com',
+          password: 'password1',
+          mobileNo: '1234567890',
+          firstName: 'John',
+          lastName: 'Doe',
+          accountType: randomAccountType(),
+          companyId: 1,
+          verifiedEmail: 1,
+          verifiedMobile: 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },  
+      ],
+      {}
+    );
+
+
   },
   async down(queryInterface, Sequelize) {
     // Implementation for rollback
@@ -45,9 +51,8 @@ module.exports = {
 };
 
 function generateAccountNumber() {
-  const prefix = 'ACC';
   const randomNumber = Math.floor(Math.random() * 1000000000);
-  const accountNumber = `${prefix}-${randomNumber.toString().padStart(8, '0')}`;
+  const accountNumber = `${randomNumber.toString().padStart(8, '0')}`;
   return accountNumber;
 }
 
